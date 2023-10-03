@@ -3,7 +3,7 @@ proc getMoveFromPlayer {} {
 
     while {!$valid} {
         set valid 1
-        puts -nonewline "Enter your move (row then column) e.g. 1, 3: "
+        puts -nonewline "\nEnter your move (row then column) e.g. 1, 3: "
         flush stdout
         set moveInput [gets stdin]
         
@@ -76,8 +76,12 @@ proc checkGameOver {board lastMoveMarker} {
 
     set draw 1 
     for {set i 0} {$i < 3} {incr i} {
+        set row [lindex $board $i]
         for {set j 0} {$j < 3} {incr j} {
-            if {[lindex $board $i $j] == 0} {
+            set current_value [lindex $row $j]
+            # puts "Checking value at index $i,$j: $current_value"
+            if {$current_value == 0} {
+                # puts "setting draw to 0"
                 set draw 0
                 break
             }
@@ -87,12 +91,15 @@ proc checkGameOver {board lastMoveMarker} {
         }
     }
 
+    # puts "draw is... $draw"
     return [expr {$draw ? -1 : 0}]
 }
 
 proc getMinimaxMove {board playerNext maxDepth} {
 
     set score [checkGameOver $board [expr {$playerNext ? 2 : 1}]]
+
+    # puts "Score is $score"
 
     # Recursive base case
     if {$score != 0 || $maxDepth == 0} {
@@ -128,27 +135,25 @@ proc getMinimaxMove {board playerNext maxDepth} {
 }
 
 
-proc getMoveFromAI {boardInput playerNextInput} {
-    upvar $boardInput board
+proc getMoveFromAI {board playerNextInput} {
     upvar $playerNextInput playerNext
 
     set maxDepth 10
 
-    set result [getMinimaxMove boardInput $playerNextInput $maxDepth]
+    set result [getMinimaxMove $board $playerNextInput $maxDepth]
 
-    puts "Debug: result = $result"  ;# Debugging line
-    puts "Debug: result 0 = [lindex $result 0]"  ;# Debugging line
-    puts "Debug: result 1 = [lindex $result 1]"  ;# Debugging line
+    # puts "Debug: result = $result"  ;# Debugging line
+    # puts "Debug: result 0 = [lindex $result 0]"  ;# Debugging line
+    # puts "Debug: result 1 = [lindex $result 1]"  ;# Debugging line
 
     return [list [lindex $result 1] [lindex $result 2]]
 }
 
-proc printBoard {boardInput} {
-    upvar $boardInput board
+proc printBoard {board} {
     global playerChar
     global AIChar
 
-    puts "  1|2|3"
+    puts "  1 2 3"
     for {set i 0} {$i < 3} {incr i} {
         puts -nonewline "[expr $i + 1] "
         for {set j 0} {$j < 3} {incr j} {
@@ -169,7 +174,7 @@ proc printBoard {boardInput} {
             }
         }
         if {$i < 2} {
-            puts "--------"
+            puts " -------"
         }
     }
 }
@@ -179,7 +184,7 @@ proc getMove {boardInput playerNextInput gameOverInput} {
     upvar $boardInput board
     upvar $gameOverInput gameOver
 
-    printBoard board
+    printBoard $board
 
     if {$playerNext} {
         set moveValid 0
@@ -193,6 +198,7 @@ proc getMove {boardInput playerNextInput gameOverInput} {
             }
         }        
     } else {
+        puts "\nThe AI made its move!"
         set AImove [getMoveFromAI $board $playerNext]
         lset board [lindex $AImove 0] [lindex $AImove 1] 2
     }
@@ -246,6 +252,8 @@ proc runGame {} {
         getMove board playerNext gameOver
     }
 
+    printBoard $board
+
     if {$gameOver == -1} {
         puts "It's a draw!"
     } elseif {$gameOver == -10} {
@@ -255,4 +263,4 @@ proc runGame {} {
     }
 }
 
-[runGame]
+runGame
