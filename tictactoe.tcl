@@ -1,6 +1,14 @@
+# Declare global variables
+set playerFirst 0
+set playerChar "X"
+set AIChar "O"
+set difficulty 3
+
+# Get a tic tac toe move from the player
 proc getMoveFromPlayer {} {
     set valid 0
 
+    # Keep asking until a valid input is provided
     while {!$valid} {
         set valid 1
         puts -nonewline "\nEnter your move (row then column) e.g. 1, 3: "
@@ -13,6 +21,7 @@ proc getMoveFromPlayer {} {
         set secondCoord -1
         set nextCoord -1
         
+        # Parse input string until two ints in range are found
         for {set i 0} {$i < $inputLength} {incr i} {
             set currentChar [string index $moveInput $i]
             if {[string is integer -strict $currentChar]} {
@@ -33,6 +42,7 @@ proc getMoveFromPlayer {} {
             }
         }
         
+        # Could not find two valid ints. Try again.
         if {$secondCoord == -1} {
             set valid 0
             puts "\ninvalid input\n"
@@ -41,9 +51,12 @@ proc getMoveFromPlayer {} {
     return [list [expr {$firstCoord-1}] [expr {$secondCoord-1}]]
 }
 
+# Determine if the game has ended. The if statements 
+# are more efficient than loops.
 proc checkGameOver {board lastMoveMarker} {
     set win 0
 
+    # Check center square
     if {[lindex $board 1 1] == $lastMoveMarker} {
         if {[lindex $board 0 0] == $lastMoveMarker && [lindex $board 2 2] == $lastMoveMarker} {
             set win 1
@@ -55,12 +68,14 @@ proc checkGameOver {board lastMoveMarker} {
             set win 1
         }
     } else {
+        # Check upper left corner
         if {[lindex $board 0 0] == $lastMoveMarker} {
             if {[lindex $board 0 1] == $lastMoveMarker && [lindex $board 0 2] == $lastMoveMarker} {
                 set win 1
             } elseif {[lindex $board 1 0] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
                 set win 1
             }
+            # Check lower right corner
         } elseif {[lindex $board 2 2] == $lastMoveMarker} {
             if {[lindex $board 2 1] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
                 set win 1
@@ -70,18 +85,19 @@ proc checkGameOver {board lastMoveMarker} {
         }
     }
 
+    # Return a score associated with the win
     if {$win} {
         return [expr {$lastMoveMarker == 1 ? 10 : -10}]
     }
 
+    # Assume draw
     set draw 1 
     for {set i 0} {$i < 3} {incr i} {
         set row [lindex $board $i]
         for {set j 0} {$j < 3} {incr j} {
             set current_value [lindex $row $j]
-            # puts "Checking value at index $i,$j: $current_value"
+            # If a square is blank, it's not a draw.
             if {$current_value == 0} {
-                # puts "setting draw to 0"
                 set draw 0
                 break
             }
@@ -91,15 +107,13 @@ proc checkGameOver {board lastMoveMarker} {
         }
     }
 
-    # puts "draw is... $draw"
     return [expr {$draw ? -1 : 0}]
 }
 
+# Recursive minimax function to run all possible games
 proc getMinimaxMove {board playerNext maxDepth} {
 
     set score [checkGameOver $board [expr {$playerNext ? 2 : 1}]]
-
-    # puts "Score is $score"
 
     # Recursive base case
     if {$score != 0 || $maxDepth == 0} {
@@ -110,14 +124,21 @@ proc getMinimaxMove {board playerNext maxDepth} {
     set bestRow -1
     set bestColumn -1
 
+    # For all rows and columns
     for {set i 0} {$i < 3} {incr i} {
         for {set j 0} {$j < 3} {incr j} {
+            # If the square is empty
             if {[lindex $board $i $j] == 0} {
+                # Try the square
                 lset board $i $j [expr $playerNext ? 1 : 2]
                 set newResult [getMinimaxMove $board [expr {!$playerNext}] [expr {$maxDepth - 1}]]
+                
+                # Get the final result from recursive base
                 set newScore [lindex $newResult 0]
+                # Revert the board
                 lset board $i $j 0
 
+                # Update the best score and move
                 if {$playerNext && $newScore > $bestScore} {
                     set bestScore $newScore
                     set bestRow $i
@@ -131,24 +152,42 @@ proc getMinimaxMove {board playerNext maxDepth} {
         }
     }
 
+    # Return the best score and associated move
     return [list $bestScore $bestRow $bestColumn]
 }
 
+# Return a random valid move
+proc getRandomAIMove {board} {
+    set randomNumber1 -1
+    set randomNumber2 -1
 
+    while {1} {
+        set randomNumber1 [expr {int(rand() * 3)}]
+        set randomNumber2 [expr {int(rand() * 3)}]
+        if {[lindex $board $randomNumber1 $randomNumber2] == 0} {
+            break
+        }
+    }
+    return [list $randomNumber1 $randomNumber2]
+}
+
+# Use minimax to find a move
 proc getMoveFromAI {board playerNextInput} {
+    global difficulty
     upvar $playerNextInput playerNext
 
-    set maxDepth 10
+    set maxDepth [expr {$difficulty > 2} ? 10 : 2]
+
+    if {$difficulty == 1} {
+        return [getRandomAIMove $board]
+    }
 
     set result [getMinimaxMove $board $playerNextInput $maxDepth]
-
-    # puts "Debug: result = $result"  ;# Debugging line
-    # puts "Debug: result 0 = [lindex $result 0]"  ;# Debugging line
-    # puts "Debug: result 1 = [lindex $result 1]"  ;# Debugging line
 
     return [list [lindex $result 1] [lindex $result 2]]
 }
 
+# Print out the board
 proc printBoard {board} {
     global playerChar
     global AIChar
@@ -179,6 +218,7 @@ proc printBoard {board} {
     }
 }
 
+# Get move from player or AI
 proc getMove {boardInput playerNextInput gameOverInput} {
     upvar $playerNextInput playerNext
     upvar $boardInput board
@@ -204,25 +244,20 @@ proc getMove {boardInput playerNextInput gameOverInput} {
     }
 
     set gameOver [checkGameOver $board [expr {$playerNext == 1 ? 1 : 2}]]
+
     set playerNext [expr {!$playerNext}]
 }
 
-set playerFirst 0
-
-set playerChar "X"
-set AIChar "O"
-
-proc runGame {} {
-    # Game start
-    set gameOver 0
-    set board {{0 0 0} {0 0 0} {0 0 0}}
-    set gameRunning 1
-    set firstValid 0
-    set playerNext 0
+# Ask the player who should go first
+proc setFirstPlayer {} {
     global playerFirst
     global playerChar
     global AIChar
 
+    set playerNext 0
+    set firstValid 0
+
+    # Keep asking until a valid input is provided
     while {!$firstValid} {
         puts -nonewline "Will the player go first? (y/n) "
         flush stdout
@@ -238,8 +273,9 @@ proc runGame {} {
         }
     }
 
+    # Set the global chars
     set playerFirst $playerNext
-    
+
     if {$playerFirst} {
         set playerChar "X"
         set AIChar "O"
@@ -247,13 +283,54 @@ proc runGame {} {
         set playerChar "O"
         set AIChar "X"
     }
+}
 
+# Ask the user for a difficulty
+proc setDifficulty {} {
+    global difficulty
+
+    while {1} {
+        puts -nonewline "Please input a number from 1-3 to set the difficulty (3 is hardest): "
+        flush stdout
+        set moveInput [gets stdin]
+
+        # Check if the input is a single character
+        if {[string length $moveInput] == 1} {
+            # Check if the input is an integer
+            if {[string is integer -strict $moveInput]} {
+                # Check if the input falls within the range
+                if {$moveInput > 0 && $moveInput < 4} {
+                    set difficulty $moveInput
+                    return
+                }
+            }
+        }
+        puts "\nInvalid input! Please enter a single-digit number between 1 and 3.\n"
+    }
+}
+
+proc runGame {} {
+    # Game start
+    set board {{0 0 0} {0 0 0} {0 0 0}}
+    
+    # Ask player who should go first
+    setFirstPlayer
+
+    setDifficulty
+
+    global playerFirst
+    set playerNext $playerFirst
+
+    # Run the game until it ends
+    set gameOver 0
     while {!$gameOver} {
         getMove board playerNext gameOver
     }
 
+    # Display the board one last time
     printBoard $board
 
+    # Print the outcome
     if {$gameOver == -1} {
         puts "It's a draw!"
     } elseif {$gameOver == -10} {
