@@ -51,64 +51,101 @@ proc getMoveFromPlayer {} {
     return [list [expr {$firstCoord-1}] [expr {$secondCoord-1}]]
 }
 
-# Determine if the game has ended. The if statements 
-# are more efficient than loops.
-proc checkGameOver {board lastMoveMarker} {
-    set win 0
+# # Determine if the game has ended. The if statements 
+# # are more efficient than loops.
+# proc checkGameOver {board lastMoveMarker} {
+#     set win 0
 
-    # Check center square
-    if {[lindex $board 1 1] == $lastMoveMarker} {
-        if {[lindex $board 0 0] == $lastMoveMarker && [lindex $board 2 2] == $lastMoveMarker} {
-            set win 1
-        } elseif {[lindex $board 0 2] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
-            set win 1
-        } elseif {[lindex $board 0 1] == $lastMoveMarker && [lindex $board 2 1] == $lastMoveMarker} {
-            set win 1
-        } elseif {[lindex $board 1 0] == $lastMoveMarker && [lindex $board 1 2] == $lastMoveMarker} {
-            set win 1
-        }
-    } else {
-        # Check upper left corner
-        if {[lindex $board 0 0] == $lastMoveMarker} {
-            if {[lindex $board 0 1] == $lastMoveMarker && [lindex $board 0 2] == $lastMoveMarker} {
-                set win 1
-            } elseif {[lindex $board 1 0] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
-                set win 1
-            }
-            # Check lower right corner
-        } elseif {[lindex $board 2 2] == $lastMoveMarker} {
-            if {[lindex $board 2 1] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
-                set win 1
-            } elseif {[lindex $board 1 2] == $lastMoveMarker && [lindex $board 0 2] == $lastMoveMarker} {
-                set win 1
-            }
+#     # Check center square
+#     if {[lindex $board 1 1] == $lastMoveMarker} {
+#         if {[lindex $board 0 0] == $lastMoveMarker && [lindex $board 2 2] == $lastMoveMarker} {
+#             set win 1
+#         } elseif {[lindex $board 0 2] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
+#             set win 1
+#         } elseif {[lindex $board 0 1] == $lastMoveMarker && [lindex $board 2 1] == $lastMoveMarker} {
+#             set win 1
+#         } elseif {[lindex $board 1 0] == $lastMoveMarker && [lindex $board 1 2] == $lastMoveMarker} {
+#             set win 1
+#         }
+#     } else {
+#         # Check upper left corner
+#         if {[lindex $board 0 0] == $lastMoveMarker} {
+#             if {[lindex $board 0 1] == $lastMoveMarker && [lindex $board 0 2] == $lastMoveMarker} {
+#                 set win 1
+#             } elseif {[lindex $board 1 0] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
+#                 set win 1
+#             }
+#             # Check lower right corner
+#         } elseif {[lindex $board 2 2] == $lastMoveMarker} {
+#             if {[lindex $board 2 1] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker} {
+#                 set win 1
+#             } elseif {[lindex $board 1 2] == $lastMoveMarker && [lindex $board 0 2] == $lastMoveMarker} {
+#                 set win 1
+#             }
+#         }
+#     }
+
+#     # Return a score associated with the win
+#     if {$win} {
+#         return [expr {$lastMoveMarker == 1 ? 10 : -10}]
+#     }
+
+#     # Assume draw
+#     set draw 1 
+#     for {set i 0} {$i < 3} {incr i} {
+#         set row [lindex $board $i]
+#         for {set j 0} {$j < 3} {incr j} {
+#             set current_value [lindex $row $j]
+#             # If a square is blank, it's not a draw.
+#             if {$current_value == 0} {
+#                 set draw 0
+#                 break
+#             }
+#         }
+#         if {!$draw} {
+#             break
+#         }
+#     }
+
+#     return [expr {$draw ? -1 : 0}]
+# }
+
+proc checkGameOver {board lastMoveMarker} {
+    # Check rows
+    for {set i 0} {$i < 3} {incr i} {
+        set row [lindex $board $i]
+        if {[lindex $row 0] == $lastMoveMarker && [lindex $row 1] == $lastMoveMarker && [lindex $row 2] == $lastMoveMarker} {
+            return [expr {$lastMoveMarker == 1 ? 10 : -10}]
         }
     }
 
-    # Return a score associated with the win
-    if {$win} {
+    # Check columns
+    for {set j 0} {$j < 3} {incr j} {
+        if {[lindex $board 0 $j] == $lastMoveMarker && [lindex $board 1 $j] == $lastMoveMarker && [lindex $board 2 $j] == $lastMoveMarker} {
+            return [expr {$lastMoveMarker == 1 ? 10 : -10}]
+        }
+    }
+
+    # Check diagonals
+    if {([lindex $board 0 0] == $lastMoveMarker && [lindex $board 1 1] == $lastMoveMarker && [lindex $board 2 2] == $lastMoveMarker) || 
+        ([lindex $board 0 2] == $lastMoveMarker && [lindex $board 1 1] == $lastMoveMarker && [lindex $board 2 0] == $lastMoveMarker)} {
         return [expr {$lastMoveMarker == 1 ? 10 : -10}]
     }
 
-    # Assume draw
-    set draw 1 
+    # Check for draw
     for {set i 0} {$i < 3} {incr i} {
         set row [lindex $board $i]
         for {set j 0} {$j < 3} {incr j} {
-            set current_value [lindex $row $j]
-            # If a square is blank, it's not a draw.
-            if {$current_value == 0} {
-                set draw 0
-                break
+            if {[lindex $row $j] == 0} {
+                return 0
             }
-        }
-        if {!$draw} {
-            break
         }
     }
 
-    return [expr {$draw ? -1 : 0}]
+    # Assume draw if function hasn't returned by this point
+    return -1
 }
+
 
 # Recursive minimax function to run all possible games
 proc getMinimaxMove {board playerNext maxDepth} {
@@ -340,4 +377,13 @@ proc runGame {} {
     }
 }
 
+proc runScoreTest {} {
+    set board {{1 2 1} {2 2 1} {2 1 1}}
+    set score [checkGameOver $board "1"]
+
+    puts "the score is: $score"
+    return
+}
+
+# runScoreTest
 runGame
